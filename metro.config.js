@@ -19,8 +19,11 @@ config.server = {
   ...config.server,
   enhanceMiddleware: (middleware) => {
     return (req, res, next) => {
-      res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
-      res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+      // Solo aplicar cabeceras en Web para no aislar la conexión en clientes nativos Expo Go
+      if (req.url && (req.url.includes('platform=web') || !req.headers['expo-platform'])) {
+        res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
+        res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+      }
       return middleware(req, res, next);
     };
   },

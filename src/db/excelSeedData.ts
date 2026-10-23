@@ -164,6 +164,17 @@ export const EXCEL_SEED_ITEMS: ExcelCategorySeed[] = [
     defaultNote: 'Gasto variable - Mensualidad Gimnasio Smart Fit',
     defaultDay: '2026-10-22',
   },
+  {
+    name: 'Otro / Imprevisto',
+    icon: 'AlertTriangle',
+    color: '#EF4444',
+    type: 'expense',
+    group: 'Gastos Variables',
+    plannedAmount: 0,
+    plannedAmountCents: 0,
+    defaultNote: 'Gasto imprevisto o no programado',
+    defaultDay: '2026-10-23',
+  },
 ];
 
 export const EXCEL_TOTAL_INCOME_CENTS = EXCEL_SEED_ITEMS.filter(

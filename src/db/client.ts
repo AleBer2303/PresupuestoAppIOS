@@ -155,7 +155,7 @@ export async function importExcelSeedData(
   // 1. Insertar Presupuestos Mensuales (Gastos Fijos + Gastos Variables del Excel = $3,350,000)
   const budgetRows: schema.NewBudget[] = [];
   for (const item of EXCEL_SEED_ITEMS) {
-    if (item.type === 'expense') {
+    if (item.type === 'expense' && item.plannedAmountCents > 0) {
       const cat = categoryByName.get(item.name);
       if (cat) {
         budgetRows.push({
@@ -174,16 +174,18 @@ export async function importExcelSeedData(
   // 2. Insertar Movimientos del Excel (Ingresos = $6,100,000 y Gastos = $3,350,000)
   const transactionRows: schema.NewTransaction[] = [];
   for (const item of EXCEL_SEED_ITEMS) {
-    const cat = categoryByName.get(item.name);
-    if (cat) {
-      const daySuffix = item.defaultDay.slice(8, 10) || '01';
-      transactionRows.push({
-        amount: item.plannedAmountCents,
-        type: item.type,
-        categoryId: cat.id,
-        date: `${targetMonth}-${daySuffix}T12:00:00.000Z`,
-        note: `${item.group}: ${item.defaultNote}`,
-      });
+    if (item.plannedAmountCents > 0) {
+      const cat = categoryByName.get(item.name);
+      if (cat) {
+        const daySuffix = item.defaultDay.slice(8, 10) || '01';
+        transactionRows.push({
+          amount: item.plannedAmountCents,
+          type: item.type,
+          categoryId: cat.id,
+          date: `${targetMonth}-${daySuffix}T12:00:00.000Z`,
+          note: `${item.group}: ${item.defaultNote}`,
+        });
+      }
     }
   }
 
@@ -214,6 +216,21 @@ export async function initializeDatabase(): Promise<void> {
 
   if (totalCount === 0 || excelCategoryCheck.length === 0) {
     await importExcelSeedData(EXCEL_DEFAULT_MONTH);
+  } else {
+    // Asegurar que la categoría "Otro / Imprevisto" exista incluso en bases de datos ya creadas
+    const imprevistoCheck = await database
+      .select()
+      .from(schema.categories)
+      .where(eq(schema.categories.name, 'Otro / Imprevisto'));
+
+    if (imprevistoCheck.length === 0) {
+      await database.insert(schema.categories).values({
+        name: 'Otro / Imprevisto',
+        icon: 'AlertTriangle',
+        color: '#EF4444',
+        type: 'expense',
+      });
+    }
   }
 
   isInitialized = true;

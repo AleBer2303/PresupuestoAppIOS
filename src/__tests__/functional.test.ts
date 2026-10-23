@@ -66,13 +66,13 @@ describe('1. Configuración de Bundling (Expo SQLite wa-sqlite.wasm & Metro)', (
 });
 
 describe('2. Datos Importados del Excel (Control Ingresos y gastos mensuales.xlsx)', () => {
-  it('contiene exactamente las 12 categorías del archivo Excel (3 ingresos y 9 gastos)', () => {
+  it('contiene las 13 categorías (3 ingresos y 10 gastos incluyendo "Otro / Imprevisto")', () => {
     const incomes = EXCEL_SEED_ITEMS.filter((i) => i.type === 'income');
     const expenses = EXCEL_SEED_ITEMS.filter((i) => i.type === 'expense');
 
-    assert.equal(EXCEL_SEED_ITEMS.length, 12);
+    assert.equal(EXCEL_SEED_ITEMS.length, 13);
     assert.equal(incomes.length, 3);
-    assert.equal(expenses.length, 9);
+    assert.equal(expenses.length, 10);
 
     const expectedNames = [
       'Salario Principal',
@@ -87,6 +87,7 @@ describe('2. Datos Importados del Excel (Control Ingresos y gastos mensuales.xls
       'Gasolina Moto/Carro',
       'Tarjeta Nu',
       'Smart Fit',
+      'Otro / Imprevisto',
     ];
 
     assert.deepEqual(
@@ -128,9 +129,15 @@ describe('3. Pruebas Funcionales End-to-End (SQLite + Drizzle ORM + Zustand)', (
     const state = useFinanceStore.getState();
 
     assert.equal(state.isReady, true);
-    assert.equal(state.categories.length, 12);
+    assert.equal(state.categories.length, 13);
     assert.equal(state.transactions.length, 12);
-    assert.equal(state.budgetStatuses.length, 9);
+    assert.equal(state.budgetStatuses.length, 10);
+
+    const imprevistoCat = state.categories.find(
+      (c) => c.name === 'Otro / Imprevisto'
+    );
+    assert.ok(imprevistoCat, 'Debe existir la categoría "Otro / Imprevisto"');
+    assert.equal(imprevistoCat?.type, 'expense');
 
     assert.equal(state.balanceSummary.totalIncome, 610_000_000);
     assert.equal(state.balanceSummary.totalExpense, 335_000_000);
@@ -259,7 +266,7 @@ describe('3. Pruebas Funcionales End-to-End (SQLite + Drizzle ORM + Zustand)', (
     let state = useFinanceStore.getState();
 
     assert.equal(state.isReady, true);
-    assert.equal(state.categories.length, 12);
+    assert.equal(state.categories.length, 13);
     assert.equal(state.transactions.length, 12);
     assert.equal(state.balanceSummary.totalIncome, 610_000_000);
     assert.equal(state.balanceSummary.totalExpense, 335_000_000);

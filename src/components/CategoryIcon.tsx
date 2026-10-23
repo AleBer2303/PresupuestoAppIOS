@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  AlertTriangle,
   Award,
   Bike,
   Briefcase,
@@ -26,6 +27,7 @@ import {
 } from 'lucide-react-native';
 
 export const ICON_MAP: Record<string, LucideIcon> = {
+  AlertTriangle,
   Award,
   Bike,
   Briefcase,
