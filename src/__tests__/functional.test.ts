@@ -20,6 +20,7 @@ import {
   parseInputToCents,
   shiftMonth,
 } from '../utils/formatters.ts';
+import { getThemeTokens } from '../utils/themeTokens.ts';
 
 describe('1. Configuración de Bundling (Expo SQLite wa-sqlite.wasm & Metro)', () => {
   it('incluye soporte para .wasm y .sql en metro.config.js y cabeceras COOP/COEP', () => {
@@ -320,5 +321,21 @@ describe('4. Utilidades de Formato y Conversión (formatters.ts)', () => {
       formattedCop.includes('4.000.000') || formattedCop.includes('4,000,000'),
       `Formato COP inesperado: ${formattedCop}`
     );
+  });
+
+  it('alterna correctamente entre Dark Mode y Light Mode con tokens Liquid Glass', () => {
+    useFinanceStore.getState().setThemeMode('dark');
+    assert.equal(useFinanceStore.getState().themeMode, 'dark');
+
+    const darkTokens = getThemeTokens(useFinanceStore.getState().themeMode);
+    assert.equal(darkTokens.isDark, true);
+    assert.equal(darkTokens.canvasBg, '#050811');
+
+    useFinanceStore.getState().toggleThemeMode();
+    assert.equal(useFinanceStore.getState().themeMode, 'light');
+
+    const lightTokens = getThemeTokens(useFinanceStore.getState().themeMode);
+    assert.equal(lightTokens.isDark, false);
+    assert.equal(lightTokens.canvasBg, '#EEF2FF');
   });
 });

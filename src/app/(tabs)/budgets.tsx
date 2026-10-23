@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
-  Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   View,
@@ -19,6 +19,13 @@ import { useFinanceStore } from '@/store/useFinanceStore';
 import { MonthSelectorHeader } from '@/components/MonthSelectorHeader';
 import { CategoryIcon } from '@/components/CategoryIcon';
 import {
+  AnimatedProgressBar,
+  LiquidGlassCard,
+  LiquidScreenCanvas,
+  SpringPressable,
+  useLiquidTheme,
+} from '@/components/LiquidGlass';
+import {
   formatCurrencyFromCents,
   parseInputToCents,
 } from '@/utils/formatters';
@@ -29,13 +36,15 @@ export default function BudgetsScreen() {
   const currency = useFinanceStore((s) => s.currency);
   const upsertBudgetLimit = useFinanceStore((s) => s.upsertBudgetLimit);
 
+  const { tokens } = useLiquidTheme();
+
   const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
   const [limitInput, setLimitInput] = useState<string>('');
 
   const startEditing = (categoryId: number, currentLimitInCents: number) => {
     setEditingCategoryId(categoryId);
     setLimitInput(
-      currentLimitInCents > 0 ? (currentLimitInCents / 100).toFixed(2) : ''
+      currentLimitInCents > 0 ? String(Math.round(currentLimitInCents / 100)) : ''
     );
   };
 
@@ -52,200 +61,427 @@ export default function BudgetsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950" edges={['top']}>
-      <MonthSelectorHeader
-        title="Presupuesto Mensual"
-        subtitle="Control por categoría y alertas de consumo (80% / 100%)"
-      />
+    <LiquidScreenCanvas>
+      <SafeAreaView style={styles.flexOne} edges={['top']}>
+        <MonthSelectorHeader
+          title="Presupuesto Mensual"
+          subtitle="Control por categoría y alertas de consumo (80% / 100%)"
+        />
 
-      <ScrollView
-        className="flex-1 px-5"
-        contentContainerStyle={{ paddingTop: 16, paddingBottom: 120 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Resumen de Presupuesto Global */}
-        <View className="bg-slate-900 border border-slate-800 rounded-3xl p-5 mb-5">
-          <View className="flex-row items-center justify-between mb-3">
-            <View>
-              <Text className="text-xs uppercase tracking-wider text-slate-400 font-semibold">
-                Total Asignado
-              </Text>
-              <Text className="text-2xl font-extrabold text-white mt-0.5">
-                {formatCurrencyFromCents(balanceSummary.totalBudgetLimit, currency)}
-              </Text>
+        <ScrollView
+          style={styles.scrollArea}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Resumen de Presupuesto Global */}
+          <LiquidGlassCard variant="hero" delay={20} style={styles.mb18}>
+            <View style={styles.summaryTopRow}>
+              <View>
+                <Text style={[styles.uppercaseLabel, { color: tokens.textSecondary }]}>
+                  Total Asignado
+                </Text>
+                <Text style={[styles.summaryPrimaryVal, { color: tokens.textPrimary }]}>
+                  {formatCurrencyFromCents(balanceSummary.totalBudgetLimit, currency)}
+                </Text>
+              </View>
+
+              <View style={styles.alignEnd}>
+                <Text style={[styles.uppercaseLabel, { color: tokens.textSecondary }]}>
+                  Total Ejecutado
+                </Text>
+                <Text style={[styles.summarySecondaryVal, { color: tokens.rose }]}>
+                  {formatCurrencyFromCents(balanceSummary.totalExpense, currency)}
+                </Text>
+              </View>
             </View>
-            <View className="items-end">
-              <Text className="text-xs uppercase tracking-wider text-slate-400 font-semibold">
-                Total Gastado
-              </Text>
-              <Text className="text-xl font-bold text-rose-400 mt-0.5">
-                {formatCurrencyFromCents(balanceSummary.totalExpense, currency)}
-              </Text>
-            </View>
-          </View>
 
-          <View className="flex-row items-center gap-4 pt-3 border-t border-slate-800/80">
-            <View className="flex-row items-center gap-1.5">
-              <View className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <Text className="text-xs text-slate-400">&lt; 80% Óptimo</Text>
-            </View>
-            <View className="flex-row items-center gap-1.5">
-              <View className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-              <Text className="text-xs text-slate-400">&ge; 80% Alerta</Text>
-            </View>
-            <View className="flex-row items-center gap-1.5">
-              <View className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-              <Text className="text-xs text-slate-400">&ge; 100% Excedido</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Lista de Categorías con Barra de Progreso */}
-        {budgetStatuses.map((item) => {
-          const isEditing = editingCategoryId === item.category.id;
-          const clampedBarWidth = Math.min(item.percentage, 100);
-
-          const cardBorderClass =
-            item.alertLevel === 'danger'
-              ? 'border-rose-500/60'
-              : item.alertLevel === 'warning'
-                ? 'border-amber-500/60'
-                : 'border-slate-800';
-
-          const barColorClass =
-            item.alertLevel === 'danger'
-              ? 'bg-rose-500'
-              : item.alertLevel === 'warning'
-                ? 'bg-amber-500'
-                : 'bg-emerald-500';
-
-          return (
             <View
-              key={item.category.id}
-              className={`bg-slate-900 border ${cardBorderClass} rounded-3xl p-4 mb-3.5`}
+              style={[
+                styles.legendRow,
+                { borderTopColor: tokens.divider },
+              ]}
             >
-              <View className="flex-row items-center justify-between mb-3">
-                <View className="flex-row items-center gap-3">
-                  <View
-                    style={{ backgroundColor: `${item.category.color}22` }}
-                    className="w-11 h-11 rounded-2xl items-center justify-center"
-                  >
-                    <CategoryIcon
-                      name={item.category.icon}
-                      color={item.category.color}
-                      size={22}
-                    />
-                  </View>
-                  <View>
-                    <Text className="text-base font-bold text-white">
-                      {item.category.name}
-                    </Text>
-                    <Text className="text-xs text-slate-400 mt-0.5">
-                      {item.limitAmount > 0
-                        ? `${formatCurrencyFromCents(item.spentAmount, currency)} de ${formatCurrencyFromCents(item.limitAmount, currency)}`
-                        : `Gastado: ${formatCurrencyFromCents(item.spentAmount, currency)} · Sin límite`}
-                    </Text>
-                  </View>
-                </View>
-
-                <Pressable
-                  onPress={() =>
-                    isEditing
-                      ? cancelEditing()
-                      : startEditing(item.category.id, item.limitAmount)
-                  }
-                  className="p-2.5 rounded-xl bg-slate-800 active:opacity-75"
-                >
-                  {isEditing ? (
-                    <X size={16} color="#94A3B8" />
-                  ) : (
-                    <Pencil size={16} color="#10B981" />
-                  )}
-                </Pressable>
+              <View style={styles.legendItem}>
+                <View style={[styles.dot, { backgroundColor: '#10B981' }]} />
+                <Text style={[styles.legendText, { color: tokens.textSecondary }]}>
+                  &lt; 80% Óptimo
+                </Text>
               </View>
-
-              {/* Editor rápido de límite mensual */}
-              {isEditing ? (
-                <View className="flex-row items-center gap-2 bg-slate-950 border border-slate-800 rounded-2xl p-2.5 mb-3">
-                  <Text className="text-sm font-bold text-emerald-400 pl-2">
-                    {currency.symbol}
-                  </Text>
-                  <TextInput
-                    value={limitInput}
-                    onChangeText={setLimitInput}
-                    placeholder="0.00"
-                    placeholderTextColor="#475569"
-                    keyboardType="decimal-pad"
-                    className="flex-1 text-white font-bold text-base py-1"
-                    autoFocus
-                  />
-                  <Pressable
-                    onPress={() => void saveLimit(item.category.id)}
-                    className="flex-row items-center gap-1 bg-emerald-500 px-3.5 py-2 rounded-xl"
-                  >
-                    <Check size={15} color="#FFFFFF" />
-                    <Text className="text-xs font-bold text-white">Guardar</Text>
-                  </Pressable>
-                </View>
-              ) : null}
-
-              {/* Barra de Progreso */}
-              <View className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden mb-2.5">
-                <View
-                  style={{
-                    width: `${item.limitAmount > 0 ? clampedBarWidth : 0}%`,
-                  }}
-                  className={`h-full rounded-full ${barColorClass}`}
-                />
+              <View style={styles.legendItem}>
+                <View style={[styles.dot, { backgroundColor: '#F59E0B' }]} />
+                <Text style={[styles.legendText, { color: tokens.textSecondary }]}>
+                  &ge; 80% Alerta
+                </Text>
               </View>
-
-              {/* Estado / Alerta Visual 80% y 100% */}
-              <View className="flex-row items-center justify-between">
-                {item.limitAmount === 0 ? (
-                  <Text className="text-xs text-slate-500">
-                    Toca el ícono de lápiz para asignar presupuesto mensual
-                  </Text>
-                ) : item.alertLevel === 'danger' ? (
-                  <View className="flex-row items-center gap-1.5 bg-rose-500/15 px-2.5 py-1 rounded-lg">
-                    <AlertCircle size={14} color="#FB7185" />
-                    <Text className="text-xs font-bold text-rose-400">
-                      ¡Presupuesto superado! ({item.percentage.toFixed(0)}%)
-                    </Text>
-                  </View>
-                ) : item.alertLevel === 'warning' ? (
-                  <View className="flex-row items-center gap-1.5 bg-amber-500/15 px-2.5 py-1 rounded-lg">
-                    <AlertTriangle size={14} color="#FBBF24" />
-                    <Text className="text-xs font-bold text-amber-400">
-                      Alerta: &gt;80% consumido ({item.percentage.toFixed(0)}%)
-                    </Text>
-                  </View>
-                ) : (
-                  <View className="flex-row items-center gap-1.5">
-                    <CheckCircle2 size={14} color="#34D399" />
-                    <Text className="text-xs font-medium text-emerald-400">
-                      Dentro del presupuesto ({item.percentage.toFixed(0)}%)
-                    </Text>
-                  </View>
-                )}
-
-                {item.limitAmount > 0 ? (
-                  <Text
-                    className={`text-xs font-semibold ${
-                      item.remainingAmount >= 0
-                        ? 'text-slate-400'
-                        : 'text-rose-400'
-                    }`}
-                  >
-                    {item.remainingAmount >= 0
-                      ? `Restan ${formatCurrencyFromCents(item.remainingAmount, currency)}`
-                      : `Exceso ${formatCurrencyFromCents(Math.abs(item.remainingAmount), currency)}`}
-                  </Text>
-                ) : null}
+              <View style={styles.legendItem}>
+                <View style={[styles.dot, { backgroundColor: '#F43F5E' }]} />
+                <Text style={[styles.legendText, { color: tokens.textSecondary }]}>
+                  &ge; 100% Excedido
+                </Text>
               </View>
             </View>
-          );
-        })}
-      </ScrollView>
-    </SafeAreaView>
+          </LiquidGlassCard>
+
+          {/* Lista de Categorías con Barra de Progreso Liquid Glass */}
+          {budgetStatuses.map((item, index) => {
+            const isEditing = editingCategoryId === item.category.id;
+
+            const customBorderColor =
+              item.alertLevel === 'danger'
+                ? 'rgba(244, 63, 94, 0.55)'
+                : item.alertLevel === 'warning'
+                  ? 'rgba(245, 158, 11, 0.55)'
+                  : undefined;
+
+            const barFillColors: [string, string] =
+              item.alertLevel === 'danger'
+                ? ['#FB7185', '#E11D48']
+                : item.alertLevel === 'warning'
+                  ? ['#FBBF24', '#D97706']
+                  : ['#34D399', '#10B981'];
+
+            return (
+              <LiquidGlassCard
+                key={item.category.id}
+                delay={50 + index * 35}
+                borderColor={customBorderColor}
+                style={styles.mb14}
+              >
+                <View style={styles.catHeaderRow}>
+                  <View style={styles.catLeft}>
+                    <View
+                      style={[
+                        styles.catIconBox,
+                        { backgroundColor: `${item.category.color}24` },
+                      ]}
+                    >
+                      <CategoryIcon
+                        name={item.category.icon}
+                        color={item.category.color}
+                        size={22}
+                      />
+                    </View>
+                    <View style={styles.flexOne}>
+                      <Text
+                        style={[styles.catName, { color: tokens.textPrimary }]}
+                        numberOfLines={1}
+                      >
+                        {item.category.name}
+                      </Text>
+                      <Text
+                        style={[styles.catAmounts, { color: tokens.textSecondary }]}
+                        numberOfLines={1}
+                      >
+                        {item.limitAmount > 0
+                          ? `${formatCurrencyFromCents(item.spentAmount, currency)} de ${formatCurrencyFromCents(item.limitAmount, currency)}`
+                          : `Gastado: ${formatCurrencyFromCents(item.spentAmount, currency)} · Sin límite`}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <SpringPressable
+                    onPress={() =>
+                      isEditing
+                        ? cancelEditing()
+                        : startEditing(item.category.id, item.limitAmount)
+                    }
+                    scaleDown={0.88}
+                    style={[
+                      styles.editIconBtn,
+                      {
+                        backgroundColor: tokens.glassInsetBg,
+                        borderColor: tokens.glassBorder,
+                      },
+                    ]}
+                  >
+                    {isEditing ? (
+                      <X size={16} color={tokens.textSecondary} />
+                    ) : (
+                      <Pencil size={16} color={tokens.emerald} />
+                    )}
+                  </SpringPressable>
+                </View>
+
+                {/* Editor rápido de límite mensual */}
+                {isEditing ? (
+                  <View
+                    style={[
+                      styles.editorBox,
+                      {
+                        backgroundColor: tokens.glassInsetBg,
+                        borderColor: tokens.glassBorder,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.editorCurrency, { color: tokens.emerald }]}>
+                      {currency.symbol}
+                    </Text>
+                    <TextInput
+                      value={limitInput}
+                      onChangeText={setLimitInput}
+                      placeholder="0"
+                      placeholderTextColor={tokens.textMuted}
+                      keyboardType="decimal-pad"
+                      style={[styles.editorInput, { color: tokens.textPrimary }]}
+                      autoFocus
+                    />
+                    <SpringPressable
+                      onPress={() => void saveLimit(item.category.id)}
+                      scaleDown={0.92}
+                      style={[
+                        styles.saveLimitBtn,
+                        { backgroundColor: tokens.emerald },
+                      ]}
+                    >
+                      <Check size={15} color="#FFFFFF" />
+                      <Text style={styles.saveLimitBtnText}>Guardar</Text>
+                    </SpringPressable>
+                  </View>
+                ) : null}
+
+                {/* Barra de Progreso Animada */}
+                <View style={styles.barWrapper}>
+                  <AnimatedProgressBar
+                    percentage={item.limitAmount > 0 ? item.percentage : 0}
+                    fillColors={barFillColors}
+                    height={10}
+                    delay={90 + index * 30}
+                  />
+                </View>
+
+                {/* Estado / Alerta Visual 80% y 100% */}
+                <View style={styles.statusRow}>
+                  {item.limitAmount === 0 ? (
+                    <Text style={[styles.noLimitHint, { color: tokens.textMuted }]}>
+                      Toca el lápiz para asignar tope mensual
+                    </Text>
+                  ) : item.alertLevel === 'danger' ? (
+                    <View style={styles.dangerBadge}>
+                      <AlertCircle size={14} color={tokens.rose} />
+                      <Text style={[styles.badgeText, { color: tokens.rose }]}>
+                        ¡Tope superado! ({item.percentage.toFixed(0)}%)
+                      </Text>
+                    </View>
+                  ) : item.alertLevel === 'warning' ? (
+                    <View style={styles.warningBadge}>
+                      <AlertTriangle size={14} color={tokens.amber} />
+                      <Text style={[styles.badgeText, { color: tokens.amber }]}>
+                        Alerta &gt;80% ({item.percentage.toFixed(0)}%)
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.normalBadge}>
+                      <CheckCircle2 size={14} color={tokens.emerald} />
+                      <Text style={[styles.badgeText, { color: tokens.emerald }]}>
+                        Óptimo ({item.percentage.toFixed(0)}%)
+                      </Text>
+                    </View>
+                  )}
+
+                  {item.limitAmount > 0 ? (
+                    <Text
+                      style={[
+                        styles.remainingText,
+                        {
+                          color:
+                            item.remainingAmount >= 0
+                              ? tokens.textSecondary
+                              : tokens.rose,
+                        },
+                      ]}
+                    >
+                      {item.remainingAmount >= 0
+                        ? `Restan ${formatCurrencyFromCents(item.remainingAmount, currency)}`
+                        : `Exceso ${formatCurrencyFromCents(Math.abs(item.remainingAmount), currency)}`}
+                    </Text>
+                  ) : null}
+                </View>
+              </LiquidGlassCard>
+            );
+          })}
+        </ScrollView>
+      </SafeAreaView>
+    </LiquidScreenCanvas>
   );
 }
+
+const styles = StyleSheet.create({
+  flexOne: {
+    flex: 1,
+  },
+  alignEnd: {
+    alignItems: 'flex-end',
+  },
+  scrollArea: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  scrollContent: {
+    paddingTop: 16,
+    paddingBottom: 140,
+  },
+  mb18: {
+    marginBottom: 18,
+  },
+  mb14: {
+    marginBottom: 14,
+  },
+  summaryTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  uppercaseLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.9,
+  },
+  summaryPrimaryVal: {
+    fontSize: 24,
+    fontWeight: '900',
+    marginTop: 2,
+  },
+  summarySecondaryVal: {
+    fontSize: 20,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  dot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+  },
+  legendText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  catHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  catLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+    paddingRight: 8,
+  },
+  catIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  catName: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  catAmounts: {
+    fontSize: 12,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  editIconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  editorCurrency: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  editorInput: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '800',
+    paddingVertical: 4,
+  },
+  saveLimitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  saveLimitBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  barWrapper: {
+    marginBottom: 10,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  noLimitHint: {
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  dangerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(244, 63, 94, 0.14)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  warningBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(245, 158, 11, 0.14)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  normalBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  remainingText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+});

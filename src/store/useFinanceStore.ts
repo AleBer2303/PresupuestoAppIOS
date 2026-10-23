@@ -15,6 +15,7 @@ import {
   shiftMonth,
   type CurrencyOption,
 } from '../utils/formatters.ts';
+import type { ThemeMode } from '../utils/themeTokens.ts';
 
 export interface TransactionWithCategory extends Transaction {
   category: Category;
@@ -51,6 +52,7 @@ export interface CreateTransactionInput {
 interface FinanceState {
   isReady: boolean;
   isLoading: boolean;
+  themeMode: ThemeMode;
   selectedMonth: string; // Formato YYYY-MM
   currency: CurrencyOption;
   categories: Category[];
@@ -60,9 +62,11 @@ interface FinanceState {
   isTransactionModalOpen: boolean;
   presetTransactionType: TransactionType;
 
-  // Acciones de estado y navegación de mes
+  // Acciones de estado, tema y navegación de mes
   initializeApp: () => Promise<void>;
   refreshData: () => Promise<void>;
+  setThemeMode: (mode: ThemeMode) => void;
+  toggleThemeMode: () => void;
   setSelectedMonth: (month: string) => Promise<void>;
   goToPreviousMonth: () => Promise<void>;
   goToNextMonth: () => Promise<void>;
@@ -88,6 +92,7 @@ const INITIAL_SUMMARY: BalanceSummary = {
 export const useFinanceStore = create<FinanceState>((set, get) => ({
   isReady: false,
   isLoading: false,
+  themeMode: 'dark',
   selectedMonth: EXCEL_DEFAULT_MONTH,
   currency: CURRENCIES[0], // COP ($) por defecto acorde al archivo Excel
   categories: [],
@@ -215,6 +220,16 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       console.error('Error al cargar datos del mes:', error);
       set({ isLoading: false });
     }
+  },
+
+  setThemeMode: (mode: ThemeMode) => {
+    set({ themeMode: mode });
+  },
+
+  toggleThemeMode: () => {
+    set((state) => ({
+      themeMode: state.themeMode === 'dark' ? 'light' : 'dark',
+    }));
   },
 
   setSelectedMonth: async (month: string) => {

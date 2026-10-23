@@ -5,10 +5,13 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   View,
+  type ViewStyle,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -20,6 +23,7 @@ import {
 import { useFinanceStore } from '@/store/useFinanceStore';
 import type { TransactionType } from '@/db/schema';
 import { CategoryIcon } from './CategoryIcon';
+import { SpringPressable, useLiquidTheme } from './LiquidGlass';
 import { parseInputToCents } from '@/utils/formatters';
 
 export function QuickTransactionModal() {
@@ -30,6 +34,8 @@ export function QuickTransactionModal() {
   const selectedMonth = useFinanceStore((s) => s.selectedMonth);
   const currency = useFinanceStore((s) => s.currency);
   const addTransaction = useFinanceStore((s) => s.addTransaction);
+
+  const { tokens } = useLiquidTheme();
 
   const [type, setType] = useState<TransactionType>('expense');
   const [amountInput, setAmountInput] = useState<string>('');
@@ -113,6 +119,14 @@ export function QuickTransactionModal() {
     }
   };
 
+  const webBlurStyle: ViewStyle =
+    Platform.OS === 'web'
+      ? ({
+          backdropFilter: 'blur(28px) saturate(190%)',
+          WebkitBackdropFilter: 'blur(28px) saturate(190%)',
+        } as unknown as ViewStyle)
+      : {};
+
   return (
     <Modal
       visible={isOpen}
@@ -122,202 +136,558 @@ export function QuickTransactionModal() {
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1 justify-end bg-black/70"
+        style={[
+          styles.backdrop,
+          { backgroundColor: tokens.modalBackdrop },
+        ]}
       >
-        <Pressable className="flex-1" onPress={closeTransactionModal} />
+        <Pressable style={styles.flexOne} onPress={closeTransactionModal} />
 
-        <View className="bg-slate-900 rounded-t-3xl border-t border-slate-800 px-5 pt-3 pb-8 max-h-[90%]">
-          {/* Barra superior tipo iOS Bottom Sheet */}
-          <View className="w-12 h-1.5 bg-slate-700 rounded-full self-center mb-4" />
+        <View
+          style={[
+            styles.sheetContainer,
+            {
+              borderColor: tokens.glassBorder,
+              shadowColor: tokens.glassShadowColor,
+            },
+            webBlurStyle,
+          ]}
+        >
+          <LinearGradient
+            colors={tokens.modalSheetGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0.8, y: 1 }}
+            style={StyleSheet.absoluteFillObject}
+          />
 
-          <View className="flex-row items-center justify-between mb-5">
-            <Text className="text-xl font-bold text-white">
+          {/* Brillo especular superior tipo iOS Sheet */}
+          <View
+            style={[
+              styles.specularTop,
+              { backgroundColor: tokens.glassSpecularTop },
+            ]}
+          />
+
+          {/* Grabber Handle */}
+          <View
+            style={[
+              styles.grabber,
+              { backgroundColor: tokens.textMuted },
+            ]}
+          />
+
+          <View style={styles.headerRow}>
+            <Text style={[styles.sheetTitle, { color: tokens.textPrimary }]}>
               Nuevo Movimiento
             </Text>
-            <Pressable
+            <SpringPressable
               onPress={closeTransactionModal}
-              className="p-2 rounded-full bg-slate-800 active:opacity-75"
+              scaleDown={0.88}
+              style={[
+                styles.closeBtn,
+                {
+                  backgroundColor: tokens.glassInsetBg,
+                  borderColor: tokens.glassBorder,
+                },
+              ]}
             >
-              <X size={18} color="#94A3B8" />
-            </Pressable>
+              <X size={18} color={tokens.textSecondary} />
+            </SpringPressable>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            {/* Selector de Tipo: Gasto vs Ingreso */}
-            <View className="flex-row bg-slate-950 p-1.5 rounded-2xl border border-slate-800 mb-5">
-              <Pressable
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Selector Segmentado Liquid Glass: Gasto vs Ingreso */}
+            <View
+              style={[
+                styles.segmentedControl,
+                {
+                  backgroundColor: tokens.glassInsetBg,
+                  borderColor: tokens.glassBorder,
+                },
+              ]}
+            >
+              <SpringPressable
                 onPress={() => setType('expense')}
-                className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-xl ${
-                  type === 'expense' ? 'bg-rose-500' : 'bg-transparent'
-                }`}
+                scaleDown={0.96}
+                style={[
+                  styles.segmentOption,
+                  type === 'expense' && {
+                    backgroundColor: tokens.rose,
+                  },
+                ]}
               >
                 <ArrowUpRight
                   size={16}
-                  color={type === 'expense' ? '#FFFFFF' : '#94A3B8'}
+                  color={type === 'expense' ? '#FFFFFF' : tokens.textSecondary}
                 />
                 <Text
-                  className={`font-bold text-sm ${
-                    type === 'expense' ? 'text-white' : 'text-slate-400'
-                  }`}
+                  style={[
+                    styles.segmentText,
+                    {
+                      color:
+                        type === 'expense' ? '#FFFFFF' : tokens.textSecondary,
+                    },
+                  ]}
                 >
                   Gasto
                 </Text>
-              </Pressable>
+              </SpringPressable>
 
-              <Pressable
+              <SpringPressable
                 onPress={() => setType('income')}
-                className={`flex-1 flex-row items-center justify-center gap-2 py-2.5 rounded-xl ${
-                  type === 'income' ? 'bg-emerald-500' : 'bg-transparent'
-                }`}
+                scaleDown={0.96}
+                style={[
+                  styles.segmentOption,
+                  type === 'income' && {
+                    backgroundColor: tokens.emerald,
+                  },
+                ]}
               >
                 <ArrowDownLeft
                   size={16}
-                  color={type === 'income' ? '#FFFFFF' : '#94A3B8'}
+                  color={type === 'income' ? '#FFFFFF' : tokens.textSecondary}
                 />
                 <Text
-                  className={`font-bold text-sm ${
-                    type === 'income' ? 'text-white' : 'text-slate-400'
-                  }`}
+                  style={[
+                    styles.segmentText,
+                    {
+                      color:
+                        type === 'income' ? '#FFFFFF' : tokens.textSecondary,
+                    },
+                  ]}
                 >
                   Ingreso
                 </Text>
-              </Pressable>
+              </SpringPressable>
             </View>
 
-            {/* Input de Monto */}
-            <View className="bg-slate-950 border border-slate-800 rounded-2xl px-4 py-4 mb-5 items-center">
-              <Text className="text-xs uppercase tracking-wider text-slate-400 mb-1">
+            {/* Input Hero de Monto */}
+            <View
+              style={[
+                styles.amountBox,
+                {
+                  backgroundColor: tokens.glassInsetBg,
+                  borderColor: tokens.glassBorder,
+                },
+              ]}
+            >
+              <Text style={[styles.fieldLabel, { color: tokens.textSecondary }]}>
                 Monto ({currency.code})
               </Text>
-              <View className="flex-row items-center justify-center">
+              <View style={styles.amountInputRow}>
                 <Text
-                  className={`text-3xl font-extrabold mr-1 ${
-                    type === 'income' ? 'text-emerald-400' : 'text-rose-400'
-                  }`}
+                  style={[
+                    styles.currencySymbol,
+                    {
+                      color:
+                        type === 'income' ? tokens.emerald : tokens.rose,
+                    },
+                  ]}
                 >
                   {currency.symbol}
                 </Text>
                 <TextInput
                   value={amountInput}
                   onChangeText={setAmountInput}
-                  placeholder="0.00"
-                  placeholderTextColor="#475569"
+                  placeholder="0"
+                  placeholderTextColor={tokens.textMuted}
                   keyboardType="decimal-pad"
-                  className="text-4xl font-extrabold text-white min-w-[120px] text-center py-1"
+                  style={[styles.amountInput, { color: tokens.textPrimary }]}
                   autoFocus
                 />
               </View>
             </View>
 
             {/* Selector de Categoría */}
-            <Text className="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-2.5">
+            <Text
+              style={[
+                styles.sectionLabel,
+                { color: tokens.textSecondary },
+              ]}
+            >
               Categoría
             </Text>
-            <View className="flex-row flex-wrap gap-2.5 mb-5">
+            <View style={styles.categoryWrap}>
               {filteredCategories.map((cat) => {
                 const isSelected = cat.id === selectedCategoryId;
                 return (
-                  <Pressable
+                  <SpringPressable
                     key={cat.id}
                     onPress={() => setSelectedCategoryId(cat.id)}
-                    className={`flex-row items-center gap-2 px-3.5 py-2.5 rounded-2xl border ${
-                      isSelected
-                        ? 'bg-slate-800 border-emerald-500'
-                        : 'bg-slate-950 border-slate-800'
-                    }`}
+                    scaleDown={0.94}
+                    style={[
+                      styles.categoryChip,
+                      {
+                        backgroundColor: isSelected
+                          ? `${cat.color}22`
+                          : tokens.glassInsetBg,
+                        borderColor: isSelected
+                          ? cat.color
+                          : tokens.glassBorder,
+                      },
+                    ]}
                   >
                     <View
-                      style={{ backgroundColor: `${cat.color}22` }}
-                      className="w-7 h-7 rounded-lg items-center justify-center"
+                      style={[
+                        styles.catMiniIcon,
+                        { backgroundColor: `${cat.color}28` },
+                      ]}
                     >
-                      <CategoryIcon name={cat.icon} color={cat.color} size={16} />
+                      <CategoryIcon name={cat.icon} color={cat.color} size={15} />
                     </View>
                     <Text
-                      className={`text-xs font-semibold ${
-                        isSelected ? 'text-white' : 'text-slate-300'
-                      }`}
+                      style={[
+                        styles.categoryChipText,
+                        {
+                          color: isSelected
+                            ? tokens.textPrimary
+                            : tokens.textSecondary,
+                        },
+                      ]}
                     >
                       {cat.name}
                     </Text>
-                  </Pressable>
+                  </SpringPressable>
                 );
               })}
             </View>
 
             {/* Fecha */}
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-xs uppercase tracking-wider text-slate-400 font-semibold">
+            <View style={styles.dateHeaderRow}>
+              <Text style={[styles.sectionLabel, { color: tokens.textSecondary }]}>
                 Fecha (YYYY-MM-DD)
               </Text>
-              <View className="flex-row gap-2">
-                <Pressable
+              <View style={styles.quickDateRow}>
+                <SpringPressable
                   onPress={() => setQuickDate(0)}
-                  className="bg-slate-800 px-2.5 py-1 rounded-lg"
+                  scaleDown={0.92}
+                  style={[
+                    styles.quickDateChip,
+                    {
+                      backgroundColor: tokens.glassInsetBg,
+                      borderColor: tokens.glassBorder,
+                    },
+                  ]}
                 >
-                  <Text className="text-xs text-emerald-400 font-semibold">Hoy</Text>
-                </Pressable>
-                <Pressable
+                  <Text style={[styles.quickDateText, { color: tokens.emerald }]}>
+                    Hoy
+                  </Text>
+                </SpringPressable>
+                <SpringPressable
                   onPress={() => setQuickDate(-1)}
-                  className="bg-slate-800 px-2.5 py-1 rounded-lg"
+                  scaleDown={0.92}
+                  style={[
+                    styles.quickDateChip,
+                    {
+                      backgroundColor: tokens.glassInsetBg,
+                      borderColor: tokens.glassBorder,
+                    },
+                  ]}
                 >
-                  <Text className="text-xs text-slate-300 font-semibold">Ayer</Text>
-                </Pressable>
+                  <Text
+                    style={[styles.quickDateText, { color: tokens.textSecondary }]}
+                  >
+                    Ayer
+                  </Text>
+                </SpringPressable>
               </View>
             </View>
-            <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-3 mb-4">
-              <Calendar size={18} color="#64748B" />
+
+            <View
+              style={[
+                styles.inputBox,
+                {
+                  backgroundColor: tokens.glassInsetBg,
+                  borderColor: tokens.glassBorder,
+                },
+              ]}
+            >
+              <Calendar size={18} color={tokens.textMuted} />
               <TextInput
                 value={dateInput}
                 onChangeText={setDateInput}
                 placeholder="2026-10-23"
-                placeholderTextColor="#475569"
-                className="flex-1 text-white text-sm font-medium ml-2.5"
+                placeholderTextColor={tokens.textMuted}
+                style={[styles.textInput, { color: tokens.textPrimary }]}
               />
             </View>
 
             {/* Nota opcional */}
-            <Text className="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-2">
+            <Text style={[styles.sectionLabel, { color: tokens.textSecondary }]}>
               Nota (Opcional)
             </Text>
-            <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-3 mb-5">
-              <FileText size={18} color="#64748B" />
+            <View
+              style={[
+                styles.inputBox,
+                styles.mb18,
+                {
+                  backgroundColor: tokens.glassInsetBg,
+                  borderColor: tokens.glassBorder,
+                },
+              ]}
+            >
+              <FileText size={18} color={tokens.textMuted} />
               <TextInput
                 value={noteInput}
                 onChangeText={setNoteInput}
-                placeholder="Ej. Supermercado semanal, pago de luz..."
-                placeholderTextColor="#475569"
-                className="flex-1 text-white text-sm ml-2.5"
+                placeholder="Ej. Supermercado, imprevisto, pago mensual..."
+                placeholderTextColor={tokens.textMuted}
+                style={[styles.textInput, { color: tokens.textPrimary }]}
               />
             </View>
 
             {errorMessage ? (
-              <View className="bg-rose-500/15 border border-rose-500/40 rounded-xl px-3.5 py-2.5 mb-4">
-                <Text className="text-rose-400 text-xs font-medium">
+              <View style={styles.errorBanner}>
+                <Text style={[styles.errorText, { color: tokens.rose }]}>
                   {errorMessage}
                 </Text>
               </View>
             ) : null}
 
-            {/* Botón Guardar */}
-            <Pressable
+            {/* Botón Guardar Liquid Glass */}
+            <SpringPressable
               onPress={() => void handleSave()}
               disabled={isSubmitting}
-              className={`flex-row items-center justify-center gap-2 py-4 rounded-2xl ${
-                type === 'income' ? 'bg-emerald-500' : 'bg-indigo-600'
-              } active:opacity-85`}
+              scaleDown={0.96}
+              style={styles.submitBtn}
             >
+              <LinearGradient
+                colors={
+                  type === 'income'
+                    ? ['#34D399', '#10B981', '#059669']
+                    : ['#818CF8', '#6366F1', '#4F46E5']
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+              />
               <Check size={18} color="#FFFFFF" />
-              <Text className="text-white font-bold text-base">
+              <Text style={styles.submitBtnText}>
                 {isSubmitting
                   ? 'Guardando...'
                   : type === 'income'
                     ? 'Guardar Ingreso'
                     : 'Guardar Gasto'}
               </Text>
-            </Pressable>
+            </SpringPressable>
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  flexOne: {
+    flex: 1,
+  },
+  mb18: {
+    marginBottom: 18,
+  },
+  backdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  sheetContainer: {
+    borderTopLeftRadius: 34,
+    borderTopRightRadius: 34,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 38 : 26,
+    maxHeight: '90%',
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 16,
+  },
+  specularTop: {
+    position: 'absolute',
+    top: 0,
+    left: 24,
+    right: 24,
+    height: 1.5,
+    borderRadius: 1,
+  },
+  grabber: {
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginBottom: 14,
+    opacity: 0.45,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 18,
+  },
+  sheetTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    padding: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: 18,
+    gap: 6,
+  },
+  segmentOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 11,
+    borderRadius: 15,
+  },
+  segmentText: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  amountBox: {
+    borderRadius: 22,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  amountInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  currencySymbol: {
+    fontSize: 30,
+    fontWeight: '900',
+    marginRight: 4,
+  },
+  amountInput: {
+    fontSize: 36,
+    fontWeight: '900',
+    minWidth: 120,
+    textAlign: 'center',
+    paddingVertical: 2,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.9,
+    marginBottom: 9,
+  },
+  categoryWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 18,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  catMiniIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  dateHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  quickDateRow: {
+    flexDirection: 'row',
+    gap: 7,
+    marginBottom: 8,
+  },
+  quickDateChip: {
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  quickDateText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  inputBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 14,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 10,
+  },
+  errorBanner: {
+    backgroundColor: 'rgba(244, 63, 94, 0.14)',
+    borderColor: 'rgba(244, 63, 94, 0.35)',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 14,
+  },
+  errorText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  submitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  submitBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+});
