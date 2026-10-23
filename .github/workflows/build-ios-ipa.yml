@@ -1,0 +1,68 @@
+name: Generar IPA para iPhone (Release)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build-ipa:
+    name: Compilar .ipa en macOS (Sin requerir cuenta de $99)
+    runs-on: macos-15
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias NPM
+        run: npm ci
+
+      - name: Ejecutar validación y pruebas funcionales
+        run: npm run validate
+
+      - name: Generar proyecto nativo iOS (Expo Prebuild)
+        env:
+          CI: '1'
+        run: npx expo prebuild --platform ios --clean
+
+      - name: Compilar archivo .app en modo Release (Xcode)
+        working-directory: ios
+        run: |
+          WORKSPACE=$(ls -d *.xcworkspace | head -n 1)
+          SCHEME="${WORKSPACE%.xcworkspace}"
+          xcodebuild \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            build
+
+      - name: Empaquetar en PresupuestoApp.ipa
+        working-directory: ios
+        run: |
+          mkdir -p Payload
+          APP_PATH=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -n 1)
+          echo "Empaquetando aplicación: $APP_PATH"
+          cp -R "$APP_PATH" Payload/
+          zip -r9 ../PresupuestoApp.ipa Payload
+
+      - name: Subir artefacto PresupuestoApp.ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: PresupuestoApp-iOS-IPA
+          path: PresupuestoApp.ipa
+          retention-days: 30

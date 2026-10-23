@@ -1,31 +1,40 @@
 {
-  "name": "temp_app",
+  "name": "presupuesto-app",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/ui": "~58.0.22",
+    "drizzle-orm": "^0.45.4",
     "expo": "~58.0.17",
     "expo-constants": "~58.0.13",
     "expo-device": "~58.0.5",
     "expo-font": "~58.0.9",
     "expo-glass-effect": "~58.0.4",
     "expo-image": "~58.0.16",
+    "expo-linear-gradient": "~58.0.3",
     "expo-linking": "~58.0.14",
     "expo-router": "~58.0.25",
     "expo-splash-screen": "~58.0.11",
+    "expo-sqlite": "~58.0.13",
     "expo-status-bar": "~58.0.4",
     "expo-symbols": "~58.0.4",
     "expo-system-ui": "~58.0.6",
     "expo-web-browser": "~58.0.6",
+    "lucide-react-native": "^1.61.0",
+    "nativewind": "^4.2.7",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.0",
     "react-native-gesture-handler": "~3.3.0",
+    "react-native-gifted-charts": "^1.4.81",
     "react-native-reanimated": "4.7.1",
     "react-native-safe-area-context": "~5.10.1",
     "react-native-screens": "~4.30.0",
+    "react-native-svg": "15.16.0",
     "react-native-web": "~0.21.4",
-    "react-native-worklets": "0.13.0"
+    "react-native-worklets": "0.13.0",
+    "tailwindcss": "^3.4.19",
+    "zustand": "^5.0.16"
   },
   "devDependencies": {
     "@types/react": "~19.3.0",
@@ -37,7 +46,10 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --no-warnings --import ./src/__tests__/registerTestEnv.mjs --test src/__tests__/functional.test.ts",
+    "validate": "npm run typecheck && npm test"
   },
   "private": true
 }
