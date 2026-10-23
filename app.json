@@ -8,7 +8,6 @@
     "scheme": "presupuesto",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.presupuesto.app",
       "supportsTablet": false,
       "infoPlist": {
