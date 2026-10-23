@@ -87,7 +87,7 @@ export function LiquidScreenCanvas({ children }: LiquidScreenCanvasProps) {
         colors={tokens.canvasGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
       />
 
       {/* Orbe Esmeralda superior */}
@@ -177,7 +177,7 @@ export function LiquidGlassCard({
         colors={gradientColors}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.9, y: 1 }}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
       />
 
       {/* Reflejo especular curvo superior propio de iOS Liquid Glass */}
@@ -293,7 +293,7 @@ export function AnimatedProgressBar({
           colors={fillColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={StyleSheet.absoluteFillObject}
+          style={StyleSheet.absoluteFill}
         />
         <View style={styles.progressGloss} />
       </Animated.View>

@@ -157,7 +157,7 @@ export function QuickTransactionModal() {
             colors={tokens.modalSheetGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 0.8, y: 1 }}
-            style={StyleSheet.absoluteFillObject}
+            style={StyleSheet.absoluteFill}
           />
 
           {/* Brillo especular superior tipo iOS Sheet */}
@@ -462,7 +462,7 @@ export function QuickTransactionModal() {
                 }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFillObject}
+                style={StyleSheet.absoluteFill}
               />
               <Check size={18} color="#FFFFFF" />
               <Text style={styles.submitBtnText}>

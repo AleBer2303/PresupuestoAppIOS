@@ -87,7 +87,7 @@ export default function TabsLayout() {
             colors={['#34D399', '#10B981', '#059669']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFillObject}
+            style={StyleSheet.absoluteFill}
           />
           <View style={styles.fabSpecular} />
           <Plus color="#FFFFFF" size={28} strokeWidth={2.8} />
