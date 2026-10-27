@@ -1,6 +1,12 @@
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { BarChart } from 'react-native-gifted-charts';
 import {
@@ -34,6 +40,22 @@ export default function DashboardScreen() {
   const restoreExcelData = useFinanceStore((s) => s.restoreExcelData);
 
   const { tokens } = useLiquidTheme();
+  const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
+
+  // Dimensiones dinámicas calibradas para iPhone 16 Pro Max (440pt) y Web
+  const screenContentWidth = Math.min(windowWidth - 40, 520);
+  const chartInnerWidth = screenContentWidth - 36;
+  const chartYAxisWidth = 44;
+  const chartPlotAreaWidth = chartInnerWidth - chartYAxisWidth;
+  const barWidth = Math.max(48, Math.min(62, Math.floor(chartPlotAreaWidth * 0.17)));
+  const barSpacing = Math.max(34, Math.min(52, Math.floor(chartPlotAreaWidth * 0.14)));
+  const totalBarsWidth = 3 * barWidth + 2 * barSpacing;
+  const chartInitialSpacing = Math.max(
+    14,
+    Math.floor((chartPlotAreaWidth - totalBarsWidth) / 2)
+  );
+  const dynamicScrollBottom = Math.max(insets.bottom, 16) + 130;
 
   const isOver100 = balanceSummary.budgetUsedPercentage >= 100;
   const isOver80 =
@@ -96,7 +118,10 @@ export default function DashboardScreen() {
 
         <ScrollView
           style={styles.scrollArea}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: dynamicScrollBottom },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           {/* Tarjeta Hero Liquid Glass de Balance Mensual */}
@@ -340,8 +365,10 @@ export default function DashboardScreen() {
             <View style={styles.chartContainer}>
               <BarChart
                 data={chartData}
-                barWidth={42}
-                spacing={36}
+                width={chartPlotAreaWidth}
+                barWidth={barWidth}
+                spacing={barSpacing}
+                initialSpacing={chartInitialSpacing}
                 roundedTop
                 roundedBottom
                 noOfSections={4}
@@ -607,9 +634,10 @@ const styles = StyleSheet.create({
   },
   quickActionTile: {
     flex: 1,
+    minHeight: 76,
     borderRadius: 20,
     borderWidth: 1,
-    paddingVertical: 13,
+    paddingVertical: 12,
     paddingHorizontal: 6,
     alignItems: 'center',
     justifyContent: 'center',

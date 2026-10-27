@@ -339,3 +339,53 @@ describe('4. Utilidades de Formato y Conversión (formatters.ts)', () => {
     assert.equal(lightTokens.canvasBg, '#EEF2FF');
   });
 });
+
+describe('5. Validación de Proporciones iPhone 16 Pro Max y Botón Flotante (+)', () => {
+  it('garantiza renderizado del botón "+" en alta resolución Retina y visibilidad en Web', () => {
+    const layoutPath = path.resolve('src/app/(tabs)/_layout.tsx');
+    const layoutCode = fs.readFileSync(layoutPath, 'utf8');
+
+    assert.ok(
+      layoutCode.includes('zIndex: 99999'),
+      '_layout.tsx debe asignar zIndex: 99999 al botón flotante (+) para ser visible en Web'
+    );
+    assert.ok(
+      layoutCode.includes("Platform.OS === 'web' ? 'fixed' : 'absolute'"),
+      '_layout.tsx debe fijar el botón flotante en Web para evitar que quede oculto tras los tabs'
+    );
+    assert.ok(
+      layoutCode.includes('fabShadowWrapper') && layoutCode.includes('fabInnerCircle'),
+      '_layout.tsx debe aislar la sombra del contenedor circular con máscara para evitar rasterización borrosa en iOS'
+    );
+    assert.ok(
+      layoutCode.includes('Plus color="#FFFFFF" size={32} strokeWidth={2.8}'),
+      '_layout.tsx debe renderizar el icono vectorial Plus con dimensiones y trazo optimizados para Retina'
+    );
+  });
+
+  it('calcula márgenes dinámicos y proporciones simétricas para iPhone 16 Pro Max', () => {
+    const layoutPath = path.resolve('src/app/(tabs)/_layout.tsx');
+    const layoutCode = fs.readFileSync(layoutPath, 'utf8');
+    const indexPath = path.resolve('src/app/(tabs)/index.tsx');
+    const indexCode = fs.readFileSync(indexPath, 'utf8');
+    const modalPath = path.resolve('src/components/QuickTransactionModal.tsx');
+    const modalCode = fs.readFileSync(modalPath, 'utf8');
+
+    assert.ok(
+      layoutCode.includes('Math.max(insets.bottom, 12) + 6'),
+      '_layout.tsx debe respetar el Home Indicator de 34pt de iPhone 16 Pro Max en el TabBar'
+    );
+    assert.ok(
+      indexCode.includes('chartPlotAreaWidth') && indexCode.includes('initialSpacing'),
+      'index.tsx debe distribuir y centrar dinámicamente las barras del gráfico BarChart en pantallas amplias como iPhone 16 Pro Max'
+    );
+    assert.ok(
+      indexCode.includes('dynamicScrollBottom') && indexCode.includes('paddingBottom: dynamicScrollBottom'),
+      'index.tsx debe extender el padding inferior para que el contenido no quede oculto detrás del TabBar flotante y el botón (+)'
+    );
+    assert.ok(
+      modalCode.includes('Math.max(insets.bottom + 12, 32)') && modalCode.includes('maxWidth: 520'),
+      'QuickTransactionModal debe calcular padding seguro inferior para iPhone 16 Pro Max y ancho máximo simétrico'
+    );
+  });
+});

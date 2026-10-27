@@ -208,6 +208,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   monthLabelCenter: {
+    flex: 1,
     alignItems: 'center',
   },
   periodLabel: {

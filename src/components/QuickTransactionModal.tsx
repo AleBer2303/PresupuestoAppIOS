@@ -12,6 +12,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -36,6 +37,8 @@ export function QuickTransactionModal() {
   const addTransaction = useFinanceStore((s) => s.addTransaction);
 
   const { tokens } = useLiquidTheme();
+  const insets = useSafeAreaInsets();
+  const dynamicSheetPaddingBottom = Math.max(insets.bottom + 12, 32);
 
   const [type, setType] = useState<TransactionType>('expense');
   const [amountInput, setAmountInput] = useState<string>('');
@@ -147,6 +150,7 @@ export function QuickTransactionModal() {
           style={[
             styles.sheetContainer,
             {
+              paddingBottom: dynamicSheetPaddingBottom,
               borderColor: tokens.glassBorder,
               shadowColor: tokens.glassShadowColor,
             },
@@ -492,6 +496,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheetContainer: {
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
     borderTopLeftRadius: 34,
     borderTopRightRadius: 34,
     borderTopWidth: 1,
@@ -499,7 +506,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 38 : 26,
+    paddingBottom: 32,
     maxHeight: '90%',
     overflow: 'hidden',
     shadowOffset: { width: 0, height: -8 },

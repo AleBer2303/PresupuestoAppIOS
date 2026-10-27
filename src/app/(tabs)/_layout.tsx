@@ -1,7 +1,14 @@
 import React from 'react';
-import { Platform, StyleSheet, View, type ViewStyle } from 'react-native';
+import {
+  Platform,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+  type ViewStyle,
+} from 'react-native';
 import { Tabs } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   LayoutDashboard,
   PieChart,
@@ -14,6 +21,8 @@ import { SpringPressable, useLiquidTheme } from '@/components/LiquidGlass';
 export default function TabsLayout() {
   const openTransactionModal = useFinanceStore((s) => s.openTransactionModal);
   const { tokens } = useLiquidTheme();
+  const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
 
   const webBlurStyle: ViewStyle =
     Platform.OS === 'web'
@@ -22,6 +31,14 @@ export default function TabsLayout() {
           WebkitBackdropFilter: 'blur(24px) saturate(180%)',
         } as unknown as ViewStyle)
       : {};
+
+  // Cálculo dinámico para iPhone 16 Pro Max (insets.bottom = 34pt, width = 440pt) y Web
+  const isWideScreen = windowWidth > 540;
+  const tabHorizontalMargin = isWideScreen
+    ? Math.max(20, Math.floor((windowWidth - 480) / 2))
+    : 20;
+  const tabBottom = Math.max(insets.bottom, 12) + 6;
+  const fabBottom = tabBottom + 66 + 14;
 
   return (
     <View style={[styles.root, { backgroundColor: tokens.canvasBg }]}>
@@ -33,6 +50,9 @@ export default function TabsLayout() {
           tabBarStyle: [
             styles.floatingTabBar,
             {
+              left: tabHorizontalMargin,
+              right: tabHorizontalMargin,
+              bottom: tabBottom,
               backgroundColor: tokens.tabBarBg,
               borderColor: tokens.tabBarBorder,
               shadowColor: tokens.glassShadowColor,
@@ -76,21 +96,43 @@ export default function TabsLayout() {
         />
       </Tabs>
 
-      {/* Botón flotante Liquid Glass (FAB) con física de resorte estilo iOS */}
-      <View style={styles.fabContainer}>
+      {/* Botón flotante Liquid Glass (FAB) en Ultra Alta Resolución Retina y Visible en Web */}
+      <View
+        pointerEvents="box-none"
+        style={[
+          styles.fabContainer,
+          {
+            right: tabHorizontalMargin,
+            bottom: fabBottom,
+          },
+        ]}
+      >
         <SpringPressable
           onPress={() => openTransactionModal('expense')}
-          scaleDown={0.9}
-          style={styles.fabButton}
+          scaleDown={0.91}
+          style={styles.fabShadowWrapper}
+          accessibilityLabel="Agregar movimiento financiero"
+          accessibilityRole="button"
         >
-          <LinearGradient
-            colors={['#34D399', '#10B981', '#059669']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={styles.fabSpecular} />
-          <Plus color="#FFFFFF" size={28} strokeWidth={2.8} />
+          {/* Contenedor interno con máscara circular aislada de la sombra para evitar rasterización borrosa en iOS */}
+          <View style={styles.fabInnerCircle}>
+            <LinearGradient
+              colors={['#34D399', '#10B981', '#059669']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            {/* Brillo especular superior líquido */}
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.55)', 'rgba(255, 255, 255, 0.0)']}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 0.7 }}
+              style={styles.fabSpecularGradient}
+              pointerEvents="none"
+            />
+            {/* Icono vectorial nítido a escala Retina */}
+            <Plus color="#FFFFFF" size={32} strokeWidth={2.8} />
+          </View>
         </SpringPressable>
       </View>
     </View>
@@ -103,11 +145,10 @@ const styles = StyleSheet.create({
   },
   floatingTabBar: {
     position: 'absolute',
-    left: 18,
-    right: 18,
-    bottom: Platform.OS === 'ios' ? 24 : 14,
-    height: 68,
-    borderRadius: 34,
+    left: 20,
+    right: 20,
+    height: 66,
+    borderRadius: 33,
     borderTopWidth: 1,
     borderWidth: 1,
     paddingTop: 8,
@@ -117,32 +158,43 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   fabContainer: {
-    position: 'absolute',
-    right: 24,
-    bottom: Platform.OS === 'ios' ? 104 : 94,
+    position: Platform.OS === 'web' ? 'fixed' : 'absolute',
+    right: 20,
+    zIndex: 99999,
+    elevation: 999,
   },
-  fabButton: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.38)',
+  fabShadowWrapper: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
     shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.45,
-    shadowRadius: 16,
-    elevation: 10,
+    shadowRadius: 14,
+    elevation: 12,
+    ...(Platform.OS === 'web'
+      ? ({
+          boxShadow:
+            '0 8px 24px rgba(16, 185, 129, 0.45), 0 2px 6px rgba(0,0,0,0.12)',
+          cursor: 'pointer',
+        } as unknown as ViewStyle)
+      : {}),
   },
-  fabSpecular: {
+  fabInnerCircle: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.55)',
+  },
+  fabSpecularGradient: {
     position: 'absolute',
-    top: 2,
-    left: 12,
-    right: 12,
-    height: 2,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 28,
   },
 });

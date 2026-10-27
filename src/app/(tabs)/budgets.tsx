@@ -6,7 +6,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   AlertCircle,
   AlertTriangle,
@@ -37,6 +37,8 @@ export default function BudgetsScreen() {
   const upsertBudgetLimit = useFinanceStore((s) => s.upsertBudgetLimit);
 
   const { tokens } = useLiquidTheme();
+  const insets = useSafeAreaInsets();
+  const dynamicScrollBottom = Math.max(insets.bottom, 16) + 130;
 
   const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
   const [limitInput, setLimitInput] = useState<string>('');
@@ -70,7 +72,10 @@ export default function BudgetsScreen() {
 
         <ScrollView
           style={styles.scrollArea}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: dynamicScrollBottom },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >

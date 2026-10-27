@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CalendarClock, Plus, Trash2 } from 'lucide-react-native';
 import {
   useFinanceStore,
@@ -34,6 +34,8 @@ export default function HistoryScreen() {
   const openTransactionModal = useFinanceStore((s) => s.openTransactionModal);
 
   const { tokens } = useLiquidTheme();
+  const insets = useSafeAreaInsets();
+  const dynamicScrollBottom = Math.max(insets.bottom, 16) + 130;
   const [filterType, setFilterType] = useState<FilterType>('all');
 
   const groupedTransactions = useMemo<DateGroup[]>(() => {
@@ -111,7 +113,10 @@ export default function HistoryScreen() {
 
         <ScrollView
           style={styles.scrollArea}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: dynamicScrollBottom },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           {groupedTransactions.length === 0 ? (
