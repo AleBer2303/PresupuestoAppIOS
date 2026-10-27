@@ -158,10 +158,15 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   fabContainer: {
-    position: Platform.OS === 'web' ? 'fixed' : 'absolute',
+    position: 'absolute',
     right: 20,
     zIndex: 99999,
     elevation: 999,
+    ...(Platform.OS === 'web'
+      ? ({
+          position: 'fixed',
+        } as unknown as ViewStyle)
+      : {}),
   },
   fabShadowWrapper: {
     width: 62,

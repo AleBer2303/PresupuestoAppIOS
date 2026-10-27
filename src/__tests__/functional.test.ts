@@ -350,7 +350,7 @@ describe('5. Validación de Proporciones iPhone 16 Pro Max y Botón Flotante (+)
       '_layout.tsx debe asignar zIndex: 99999 al botón flotante (+) para ser visible en Web'
     );
     assert.ok(
-      layoutCode.includes("Platform.OS === 'web' ? 'fixed' : 'absolute'"),
+      layoutCode.includes("position: 'fixed'") || layoutCode.includes("'fixed'"),
       '_layout.tsx debe fijar el botón flotante en Web para evitar que quede oculto tras los tabs'
     );
     assert.ok(
