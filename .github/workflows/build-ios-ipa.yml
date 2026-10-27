@@ -15,12 +15,10 @@ jobs:
       - name: Checkout del repositorio
         uses: actions/checkout@v4
 
-      - name: Seleccionar la versión más reciente de Xcode disponible
-        run: |
-          LATEST_XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -n 1)
-          echo "Seleccionando Xcode: $LATEST_XCODE"
-          sudo xcode-select -s "$LATEST_XCODE/Contents/Developer"
-          xcodebuild -version
+      - name: Seleccionar Xcode Estable
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
 
       - name: Configurar Node.js 24
         uses: actions/setup-node@v4
@@ -28,20 +26,39 @@ jobs:
           node-version: 24
           cache: npm
 
+      - name: Exponer Node.js a scripts y build phases de Xcode
+        run: |
+          NODE_PATH=$(which node)
+          echo "Node encontrado en: $NODE_PATH"
+          sudo ln -sf "$NODE_PATH" /usr/local/bin/node
+          echo "NODE_BINARY=$NODE_PATH" >> $GITHUB_ENV
+
       - name: Instalar dependencias NPM
         run: npm install --legacy-peer-deps
 
       - name: Ejecutar validación y pruebas funcionales
         run: npm run validate
 
-      - name: Generar proyecto nativo iOS (Expo Prebuild sin instalar Pods aún)
+      - name: Generar proyecto nativo iOS (Expo Prebuild)
         env:
           CI: '1'
         run: npx expo prebuild --platform ios --clean --no-install
 
-      - name: Configurar Podfile para desactivar firma en Pods y Resource Bundles
+      - name: Configurar entorno de compilación iOS sin firma Apple de pago
         working-directory: ios
         run: |
+          # 1. Asegurar que React Native Bundle encuentre Node.js
+          echo "export NODE_BINARY=$(which node)" > .xcode.env.local
+
+          # 2. Desactivar validación estricta de Development Team en project.pbxproj
+          PROJ_FILE=$(find . -name "project.pbxproj" | head -n 1)
+          if [ -f "$PROJ_FILE" ]; then
+            echo "Ajustando configuración de firma manual en $PROJ_FILE"
+            sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' "$PROJ_FILE" || true
+            sed -i '' 's/DevelopmentTeam = "";/DevelopmentTeam = "";/g' "$PROJ_FILE" || true
+          fi
+
+          # 3. Configurar Podfile para desactivar firma en todos los Pods y dependencias
           node -e '
             const fs = require("fs");
             let podfile = fs.readFileSync("Podfile", "utf8");
@@ -54,26 +71,22 @@ jobs:
                   config.build_settings["EXPANDED_CODE_SIGN_IDENTITY"] = ""
                 end
               end
-              installer.target_installation_results.pod_target_installation_results.each do |pod_name, target_installation_result|
-                target_installation_result.resource_bundle_targets.each do |resource_bundle_target|
-                  resource_bundle_target.build_configurations.each do |config|
-                    config.build_settings["CODE_SIGNING_ALLOWED"] = "NO"
-                    config.build_settings["CODE_SIGNING_REQUIRED"] = "NO"
-                    config.build_settings["CODE_SIGN_IDENTITY"] = ""
-                    config.build_settings["EXPANDED_CODE_SIGN_IDENTITY"] = ""
-                  end
-                end
-              end
             `;
-            podfile = podfile.replace(
-              /post_install do \|installer\|/,
-              "post_install do |installer|\n" + signingSnippet
-            );
+            if (podfile.includes("post_install do |installer|")) {
+              podfile = podfile.replace(
+                "post_install do |installer|",
+                "post_install do |installer|\n" + signingSnippet
+              );
+            } else {
+              podfile += "\npost_install do |installer|\n" + signingSnippet + "\nend\n";
+            }
             fs.writeFileSync("Podfile", podfile, "utf8");
           '
+
+          # 4. Instalar CocoaPods
           pod install
 
-      - name: Compilar archivo .app en modo Release (Xcode)
+      - name: Compilar archivo .app en modo Release (Xcode Ad-Hoc)
         working-directory: ios
         run: |
           WORKSPACE=$(ls -d *.xcworkspace | head -n 1)
@@ -87,16 +100,15 @@ jobs:
             -sdk iphoneos \
             -destination "generic/platform=iOS" \
             -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="-" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            EXPANDED_CODE_SIGN_IDENTITY="" \
-            CODE_SIGN_ENTITLEMENTS="" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
+            CODE_SIGNING_ALLOWED=YES \
             COMPILER_INDEX_STORE_ENABLE=NO \
-            build | tee xcodebuild.log || {
+            build 2>&1 | tee xcodebuild.log || {
               echo "=== ERRORES DETECTADOS EN XCODEBUILD ==="
-              grep -iE "error:|fatal error:|failed" xcodebuild.log | tail -n 50 || true
+              tail -n 250 xcodebuild.log
               exit 65
             }
 
@@ -105,7 +117,12 @@ jobs:
         run: |
           mkdir -p Payload
           APP_PATH=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -n 1)
-          echo "Empaquetando aplicación: $APP_PATH"
+          if [ -z "$APP_PATH" ]; then
+            echo "Error crítico: No se encontró la carpeta .app en build/Build/Products/Release-iphoneos"
+            ls -la build/Build/Products/Release-iphoneos || true
+            exit 1
+          fi
+          echo "Empaquetando aplicación encontrada: $APP_PATH"
           cp -R "$APP_PATH" Payload/
           zip -r9 ../PresupuestoApp.ipa Payload
 
